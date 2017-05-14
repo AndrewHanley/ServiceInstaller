@@ -14,10 +14,29 @@ Editing of the scripts in the project was performed with [Visual Studio Code](ht
 * If VS Code is used for maintenance and OS is older than Windows 10, [Windows Management Framework 5.0](https://www.microsoft.com/en-us/download/details.aspx?id=50395) will be required
 * The process for debugging PowerShell with VS Code can be found [here](https://github.com/PowerShell/PowerShell/blob/master/docs/learning-powershell/using-vscode.md#debugging-with-visual-studio-code)
 
-## Resources
+## Return vs. By Ref Parameters
 
-Information was taken from the following articles in the building of the project
+In PowerShell when a statement like $result = GET-FUNC is written **ALL** output generated within the function is collected into an array and returned not just the variable specfied by the **return** statement[<sup>1</sup>](#about_return). For example the following script;
 
-1. [Deploying a Windows Service remotely with PowerShell](http://www.ben-morris.com/deploying-a-windows-service-remotely-with-powershell/)
-1. [Installing a Windows Wervice Using PowerShell](http://blog.aggregatedintelligence.com/2011/12/installing-windows-service-using.html)
-1. [Install a Windows Service Remotely with PowerShell](http://www.geoffhudik.com/tech/2012/3/22/install-a-windows-service-remotely-with-powershell.html)
+```dos
+    function Get-Result()
+    {
+        Write-Output "Hello World"
+        return "Result"
+    }
+
+    $result = Get-Result
+```
+
+The **$result** variable will contain;
+
+* Hello World
+* Result
+
+To address the return statement issue functions that are expected to return data now do so through the use of **By Reference** Parameters. See Search-Environment for implementation details.
+
+----
+
+## Footnotes
+
+<a name="about_Return">1</a>: [About Return](https://msdn.microsoft.com/en-us/powershell/reference/5.1/microsoft.powershell.core/about/about_return)

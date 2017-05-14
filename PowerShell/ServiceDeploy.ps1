@@ -9,7 +9,7 @@
     Supplying this parameter will add an Uninstall step into the service deployment if the service is installed
 
     .NOTES
-    Original used Return statement in some functions. When a statement like $result = GET-FUNC is written
+    Originally used Return statement in some functions. When a statement like $result = GET-FUNC is written
     ALL output is collected into an array and returned not just the variable specfied. For example;
     function()
     {
