@@ -9,8 +9,19 @@
     Supplying this parameter will add an Uninstall step into the service deployment if the service is installed
 
     .NOTES
-    Error messages in script are written to Console with Write-Host. This is to allow colored messages without including
-    stack traces, etc. This is NOT a great approach as it will cause issues if the script isn't run from a console.
+    Original used Return statement in some functions. When a statement like $result = GET-FUNC is written
+    ALL output is collected into an array and returned not just the variable specfied. For example;
+    function()
+    {
+        Write-Output "Hello World"
+        return "Result"
+    }
+    Will return
+        Hello World
+        Result
+
+    To address the return statement issue functions that are expected to return data now do so through the use
+    of By Reference Parameters. See Search-Environment for implementation details
 #>
 Param (
     [Parameter(Mandatory=$True)]
@@ -27,11 +38,12 @@ Param (
     .PARAMETER environment
     Environment value to verify as an acceptable value
 
-    .OUTPUTS
+    .PARAMETER retValue
     Returns the name of the remote server based upon the Environment supplied
 #>
 function Search-Environment (
-        [string]$environment = $(throw "Set-Credentials: environment is required")
+        [string]$environment = $(throw "Set-Credentials: environment is required"),
+        [ref]$retValue
 )
 {
     $local:environment = $environment.ToUpper()
@@ -41,20 +53,17 @@ function Search-Environment (
 
     if (!$local:validEnvironments.Contains($local:environment))
     {
-        Write-Host "Invalid Environment. Valid values include 'Debug', 'UAT' and 'Prod'" -ForegroundColor Red
-        Break
+        $(throw "Invalid Environment. Valid values include 'Debug', 'UAT' and 'Prod'")
     }
 
     switch ($local:environment)
     {
-        "DEBUG" { $local:serverName = "VM-Remote" }
-        "UAT"   { $local:serverName = "VM-Remote-UAT"   }
-        "PROD"  { $local:serverName = "VM-Remote-Prod"  }
+        "DEBUG" { $retValue.Value = "VM-Remote" }
+        "UAT"   { $retValue.Value = "VM-Remote-UAT"   }
+        "PROD"  { $retValue.Value = "VM-Remote-Prod"  }
     }
 
-    Write-Verbose "Remote server set to $local:serverName"
-
-    return $local:serverName
+    #Write-Verbose "Remote server set to $retValue"
 }
 
 <#
@@ -65,9 +74,10 @@ function Search-Environment (
     System.Management.Automation.PSCredential which can be used in with PS Remoting
 #>
 function Set-Credentials (
+    [ref]$retVal
 )
 {
-    Write-Verbose "Setting user credentials for deployment"
+    Write-Output "Setting user credentials for deployment"
 
     if (!(Test-Path "UserName.txt") -Or !(Test-Path "Password.txt"))
     {
@@ -85,7 +95,7 @@ function Set-Credentials (
         $local:pass = Get-Content "Password.txt"  | ConvertTo-SecureString
     }
 
-    return New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $local:user, $local:pass
+    $retVal.Value = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $local:user, $local:pass
 }
 
 <#
@@ -112,12 +122,16 @@ function Copy-Service(
             -Destination "PSDrive:" `
             -Exclude "*.pdb", "*.txt" `
             -Recurse `
+            -ErrorAction Stop `
             -Force
     }
     catch [System.ComponentModel.Win32Exception]
     {
-        Write-Host "Unable to connect to $destinationPath. Make sure you do not have a remote connection to the folder." -ForegroundColor Red
-        Break
+        $(throw "Unable to connect to $local:destinationPath. Make sure you do not have a remote connection to the folder.")
+    }
+    catch [System.IO.IOException]
+    {
+        $(throw "Unable to copy files to $local:destinationPath. `n `t $_ `n")
     }
 }
 
@@ -183,8 +197,10 @@ function Uninstall-Service (
 #
 # Main Script Execution Point
 #
-$ServerName = Search-Environment -environment $Environment
-$Credentials = Set-Credentials
+$ServerName = ""
+
+Search-Environment -environment $Environment -retValue ([ref]$ServerName)
+Set-Credentials -retVal ([ref]$Credentials)
 
 $ServiceName = "TestService"
 
