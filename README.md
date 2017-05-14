@@ -16,8 +16,8 @@ Editing of the scripts in the project was performed with [Visual Studio Code](ht
 
 ## Resources
 
-### [Deploying a Windows Service remotely with PowerShell](http://www.ben-morris.com/deploying-a-windows-service-remotely-with-powershell/)
+Information was taken from the following articles in the building of the project
 
-### [Installing a Windows Wervice Using PowerShell](http://blog.aggregatedintelligence.com/2011/12/installing-windows-service-using.html)
-
-### [Install a Windows Service Remotely with PowerShell](http://www.geoffhudik.com/tech/2012/3/22/install-a-windows-service-remotely-with-powershell.html)
+1. [Deploying a Windows Service remotely with PowerShell](http://www.ben-morris.com/deploying-a-windows-service-remotely-with-powershell/)
+1. [Installing a Windows Wervice Using PowerShell](http://blog.aggregatedintelligence.com/2011/12/installing-windows-service-using.html)
+1. [Install a Windows Service Remotely with PowerShell](http://www.geoffhudik.com/tech/2012/3/22/install-a-windows-service-remotely-with-powershell.html)
