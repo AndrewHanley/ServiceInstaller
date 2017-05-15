@@ -24,28 +24,60 @@
 #>
 function Get-Credentials 
 {
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName="NoParams")]
     param 
     (
-        [Parameter(Position = 0)]
-        [Alias("user", "u")]
-        [string]$UserNameFile = "./UserName.txt",
+        [Parameter(ParameterSetName="Files", Position = 0)]
+        [Alias("UserFile", "UF")]
+        [string]$UserNameFile,
 
-        [Parameter(Position = 1)]
-        [Alias("pass", "p")]
-        [string]$PasswordFile = "./Password.txt"
+        [Parameter(ParameterSetName="Files", Position = 1)]
+        [Alias("PassFile", "PF")]
+        [string]$PasswordFile,
+
+        [Parameter(ParameterSetName="UserNamePassword", Mandatory = $true, Position = 0)]
+        [Parameter(ParameterSetName="UserNameEncryptedPassword", Mandatory = $true, Position = 0)]
+        [Alias("User", "U")]
+        [string]$UserName,
+
+        [Parameter(ParameterSetName="UserNamePassword", Mandatory = $true, Position = 1)]
+        [Alias("Pass", "P")]
+        [string]$Password,
+
+        [Parameter(ParameterSetName="UserNameEncryptedPassword", Mandatory = $true, Position = 1)]
+        [Alias("SecurePass", "SecPass", "SPass", "SP")]
+        [securestring]$SecurePassword
     )
 
-    if (!(Test-Path $UserNameFile) -Or !(Test-Path $PasswordFile))
+    switch ($PSCmdlet.ParameterSetName)
     {
-        $local:tmpCred = Get-Credential
-        $local:user = $local:tmpCred.UserName
-        $local:pass = $local:tmpCred.Password
-    }
-    Else
-    {
-        $local:user = Get-Content $UserNameFile
-        $local:pass = Get-Content $PasswordFile  | ConvertTo-SecureString
+        "NoParams" {
+            $local:tmpCred = Get-Credential
+            $local:user = $local:tmpCred.UserName
+            $local:pass = $local:tmpCred.Password
+        }
+
+        "Files" {
+            if (!(Test-Path $UserNameFile) -Or !(Test-Path $PasswordFile))
+            {
+                Throw [System.IO.FileNotFoundException] "$UserNameFile or $PasswordFile not found."
+            }
+            Else
+            {
+                $local:user = Get-Content $UserNameFile
+                $local:pass = Get-Content $PasswordFile  | ConvertTo-SecureString
+            }
+        }
+
+        "UserNamePassword" {
+            $local:user = $UserName
+            $local:pass = $Password | ConvertTo-SecureString -AsPlainText -Force
+        }
+
+        "UserNameEncryptedPassword" {
+            $local:user = $UserName
+            $local:pass = $SecurePassword
+        }
     }
 
     return New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $local:user, $local:pass

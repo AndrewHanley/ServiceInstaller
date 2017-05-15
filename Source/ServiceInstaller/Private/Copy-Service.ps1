@@ -1,36 +1,40 @@
 ﻿<#
     .SYNOPSIS
-    This function will copy the files from a source folder to a destination folder on a remote computer using the supplied credentials
+    This function will copy the files from a source folder to a destination folder on a remote computer using the supplied credentials.
+    If credentials are not supplied the copy will use the users current credentials for the copy
 
-    .PARAMETER sourcePath      Path on computer executing script from which to copy files
-    .PARAMETER destinationPath UNC path on remote computer top copy files to
-    .PARAMETER credentials     Credentials to use when connecting to the remote server
+    .PARAMETER SourcePath      Path on computer executing script from which to copy files
+    .PARAMETER DestinationPath UNC path on remote computer top copy files to
+    .PARAMETER Credentials     Credentials to use when connecting to the remote server. 
 #>
-function Copy-Service
+function Copy-ServiceToShare
 {
     [CmdletBinding()]
     param
     (
-        [Parameter(Mandatory = $true, Position = 0)]
-        [Alias("source", "s")]
-        [string]$sourcePath,
+        [Parameter(Mandatory = $true)]
+        [string]$SourcePath,
 
-        [Parameter(Mandatory = $true, Position = 1)]
-        [Alias("dest", "d")]
-        [string]$destinationPath,
+        [Parameter(Mandatory = $true)]
+        [string]$DestinationPath,
 
-        [Parameter(Mandatory = $true, Position = 2)]
-        [Alias("cred", "c")]
-        [pscredential]$credentials
+        [pscredential]$Credentials
     )
 
     try 
     {
         $servDrive = "ServiceDrive"
 
-        Write-Output "Copying service files: `n `t Source: $local:sourcePath `n `t Destination: $local:destinationPath"
+        #Write-Output "Copying service files: `n `t Source: $local:sourcePath `n `t Destination: $local:destinationPath"
 
-        New-PSDrive -Name $servDrive -PSProvider "FileSystem" -Root $local:destinationPath -Credential $local:Credentials -ErrorAction Stop
+        if ($Credentials)
+        {
+            New-PSDrive -Name $servDrive -PSProvider "FileSystem" -Root $local:destinationPath -Credential $local:Credentials -ErrorAction Stop
+        }
+        else
+        {
+            New-PSDrive -Name $servDrive -PSProvider "FileSystem" -Root $local:destinationPath -ErrorAction Stop
+        }
 
         Copy-Item `
             -Path "$local:sourcePath\*.*" `
@@ -47,5 +51,80 @@ function Copy-Service
     catch [System.IO.IOException]
     {
         $(throw "Unable to copy files to $local:destinationPath. `n `t $_ `n")
+    }
+}
+
+<#
+    .SYNOPSIS
+    This function will copy the files from a source folder to a destination folder on a remote computer using an established PSSession
+
+    .PARAMETER SourcePath      Path on computer executing script from which to copy files
+    .PARAMETER DestinationPath UNC path on remote computer top copy files to
+    .PARAMETER Session         Established PSSession with remote computer
+#>
+function Copy-ServiceToSession
+{
+    [CmdletBinding()]
+    param
+    (
+        [Parameter(Mandatory = $true)]
+        [string]$SourcePath,
+
+        [Parameter(Mandatory = $true)]
+        [string]$DestinationPath,
+
+        [Parameter(Mandatory = $true)]
+        [System.Management.Automation.Runspaces.PSSession]$Session
+    )
+
+    Copy-Item `
+        -Path "$local:sourcePath\*.*" `
+        -Destination $DestinationPath `
+        -Exclude "*.pdb", "*.txt" `
+        -ToSession $Session `
+        -Recurse `
+        -ErrorAction Stop `
+        -Force
+}
+
+<#
+    .SYNOPSIS
+    This function will copy the files from a source folder to a destination folder on a remote computer using the supplied credentials
+
+    .PARAMETER sourcePath      Path on computer executing script from which to copy files
+    .PARAMETER destinationPath UNC path on remote computer top copy files to
+    .PARAMETER credentials     Credentials to use when connecting to the remote server
+#>
+function Copy-Service
+{
+    [CmdletBinding(DefaultParameterSetName="Share")]
+    param
+    (
+        [Parameter(Mandatory = $true, Position = 0)]
+        [Alias("Source", "Src", "S")]
+        [string]$SourcePath,
+
+        [Parameter(Mandatory = $true, Position = 1)]
+        [Alias("Destination", "Dest", "D")]
+        [string]$DestinationPath,
+
+        [Parameter(ParameterSetName="Share", Position = 2)]
+        [Alias("Cred", "C")]
+        [pscredential]$Credentials,
+
+        [Parameter(ParameterSetName="Remoting", Mandatory = $true, Position = 2)]
+        [Alias("Sess", "S")]
+        [System.Management.Automation.Runspaces.PSSession]$Session
+    )
+
+    switch ($PSCmdlet.ParameterSetName)
+    {
+        "Share" {
+            Copy-ServiceToShare -SourcePath $SourcePath -DestinationPath $DestinationPath -Credentials $Credentials
+        }
+
+        "Remoting" {
+            Copy-ServiceToSession -SourcePath $SourcePath -DestinationPath $DestinationPath -Session $Session
+        }
     }
 }
