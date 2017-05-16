@@ -4,8 +4,13 @@ The service installer project was created to build a process for deploying Windo
 
 ## Setup
 
-Service Installer uses PowerShell script files to deploy the Windows Service files. The project was built on a Windows 10 system
-running PowerShell version 5.1.15063.0.
+| Tool                                                                        | Version       |
+|-----------------------------------------------------------------------------|---------------|
+| [Visual Studio Code](https://code.visualstudio.com/)                        | 1.12.2        |
+| [Visual Studio Community 2017](https://www.visualstudio.com/vs/community/)  | 15.2          |
+| [git](https://git-scm.com/)                                                 | 2.13.0        |
+| [PowerShell](https://msdn.microsoft.com/en-us/powershell/mt173057.aspx)     | 5.1.15063.296 |
+
 
 ## Visual Studio Code
 
