@@ -29,11 +29,11 @@ function Copy-ServiceToShare
 
         if ($Credentials)
         {
-            New-PSDrive -Name $servDrive -PSProvider "FileSystem" -Root $local:destinationPath -Credential $local:Credentials -ErrorAction Stop
+            $driveOutput = New-PSDrive -Name $servDrive -PSProvider "FileSystem" -Root $local:destinationPath -Credential $local:Credentials -ErrorAction Stop
         }
         else
         {
-            New-PSDrive -Name $servDrive -PSProvider "FileSystem" -Root $local:destinationPath -ErrorAction Stop
+            $driveOutput = New-PSDrive -Name $servDrive -PSProvider "FileSystem" -Root $local:destinationPath -ErrorAction Stop
         }
 
         Copy-Item `
@@ -83,8 +83,28 @@ function Copy-ServiceToSession
         -Exclude "*.pdb", "*.txt" `
         -ToSession $Session `
         -Recurse `
-        -ErrorAction Stop `
-        -Force
+        -Force `
+        -ErrorVariable errorDetails `
+        -ErrorAction SilentlyContinue
+
+    # Copy-Item utilizes a helper function which evaluates an array at index [0]
+    # PS2.0 has an issue with this command and throws an exception, however it still
+    # copies the files. The following code is used to check if any additional errors
+    # were thrown and if so Throw the exception
+    if ((Invoke-Command -Session $Session -ScriptBlock{$PSVersionTable.PSVersion.Major}) -eq 2)
+    {
+        if ($errorDetails.count -gt 1)
+        {
+            throw $errorDetails[1]
+        }
+    }
+    else
+    {
+        if ($errorDetails.count -gt 0)
+        {
+            throw $errorDetails[0]
+        }
+    }
 }
 
 <#
@@ -113,7 +133,7 @@ function Copy-Service
         [pscredential]$Credentials,
 
         [Parameter(ParameterSetName="Remoting", Mandatory = $true, Position = 2)]
-        [Alias("Sess", "S")]
+        [Alias("Sess")]
         [System.Management.Automation.Runspaces.PSSession]$Session
     )
 

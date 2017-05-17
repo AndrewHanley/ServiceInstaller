@@ -82,3 +82,41 @@ function Get-Credentials
 
     return New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $local:user, $local:pass
 }
+
+function Resolve-Credentials
+{
+    [CmdletBinding()]
+    param
+    (        
+        [string]$UserName,
+        [string]$Password,
+        [securestring]$SecurePassword,
+        $ConfigCredentials
+    )
+
+    if (![string]::IsNullOrEmpty($UserName))
+    {
+        if ([string]::IsNullOrEmpty($Password))
+        {
+            return Get-Credentials -UserName $UserName -SecurePassword $SecurePassword
+        }
+        else 
+        {
+            return Get-Credentials -UserName $UserName -Password $Password
+        }
+    }
+
+    if ($ConfigCredentials)
+    {        
+        if ($ConfigCredentials.IsEncryptedPassword)
+        {
+            return Get-Credentials -UserName $ConfigCredentials.UserName -SecurePassword ($ConfigCredentials.Password | ConvertTo-SecureString)
+        }
+        else
+        {
+            return Get-Credentials -UserName $ConfigCredentials.UserName -Password $ConfigCredentials.Password
+        }
+    }
+
+    return Get-Credentials
+}

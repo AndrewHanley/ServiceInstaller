@@ -1,0 +1,7 @@
+{
+    "Credentials": {
+        "UserName": "TestUser",
+        "Password": "TestPassword",
+        "IsEncryptedPassword": false
+    }
+}
